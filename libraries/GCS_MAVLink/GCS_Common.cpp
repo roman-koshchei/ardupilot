@@ -4372,6 +4372,12 @@ void GCS_MAVLINK::handle_detected_object(const mavlink_message_t &msg)
     osd->set_detected_object(payload.tracker_id, payload.count,
                              payload.x1, payload.y1, payload.x2, payload.y2,
                              payload.confidence);
+
+    gcs().send_text(MAV_SEVERITY_INFO, "OSD obj:%u (%.0f,%.0f)-(%.0f,%.0f) c:%u",
+                    payload.tracker_id,
+                    payload.x1 * 100, payload.y1 * 100,
+                    payload.x2 * 100, payload.y2 * 100,
+                    payload.confidence);
 }
 #endif
 
