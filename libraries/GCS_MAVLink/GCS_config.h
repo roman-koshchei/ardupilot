@@ -6,6 +6,7 @@
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_Arming/AP_Arming_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
+#include <AP_OSD/AP_OSD_config.h>
 
 #ifndef HAL_GCS_ENABLED
 #define HAL_GCS_ENABLED 1
