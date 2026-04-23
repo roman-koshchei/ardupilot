@@ -4343,41 +4343,32 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 #endif
 
 #if AP_OSD_DETECTED_OBJECTS_ENABLED
-void GCS_MAVLINK::handle_detected_object(const mavlink_message_t &msg)
+MAV_RESULT GCS_MAVLINK::handle_command_detected_object(const mavlink_command_int_t &packet)
 {
     AP_OSD *osd = AP::osd();
     if (osd == nullptr) {
-        return;
+        return MAV_RESULT_FAILED;
     }
 
-    struct __attribute__((packed)) {
-        uint8_t target_system;
-        uint8_t target_component;
-        uint16_t tracker_id;
-        uint8_t count;
-        float x1;
-        float y1;
-        float x2;
-        float y2;
-        uint8_t confidence;
-    } payload;
+    const uint16_t tracker_id = static_cast<uint16_t>(packet.param1);
+    const uint8_t count = static_cast<uint8_t>(packet.param2);
+    const uint8_t confidence = static_cast<uint8_t>(packet.param3);
+    const float x1 = packet.param4;
+    float y1, x2, y2;
+    memcpy(&y1, &packet.x, sizeof(float));
+    memcpy(&x2, &packet.y, sizeof(float));
+    memcpy(&y2, &packet.z, sizeof(float));
 
-    if (msg.len < sizeof(payload)) {
-        return;
-    }
-
-    const uint8_t *raw = reinterpret_cast<const uint8_t*>(&msg.payload64[0]);
-    memcpy(&payload, raw, sizeof(payload));
-
-    osd->set_detected_object(payload.tracker_id, payload.count,
-                             payload.x1, payload.y1, payload.x2, payload.y2,
-                             payload.confidence);
+    osd->set_detected_object(tracker_id, count,
+                             x1, y1, x2, y2, confidence);
 
     gcs().send_text(MAV_SEVERITY_INFO, "OSD obj:%u (%.0f,%.0f)-(%.0f,%.0f) c:%u",
-                    payload.tracker_id,
-                    payload.x1 * 100, payload.y1 * 100,
-                    payload.x2 * 100, payload.y2 * 100,
-                    payload.confidence);
+                    tracker_id,
+                    x1 * 100, y1 * 100,
+                    x2 * 100, y2 * 100,
+                    confidence);
+
+    return MAV_RESULT_ACCEPTED;
 }
 #endif
 
@@ -4664,12 +4655,6 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
-        break;
-#endif
-
-#if AP_OSD_DETECTED_OBJECTS_ENABLED
-    case 50100:
-        handle_detected_object(msg);
         break;
 #endif
 
@@ -5944,6 +5929,11 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
 #if AP_MAVLINK_FOLLOW_HANDLING_ENABLED
     case MAV_CMD_DO_FOLLOW:
         return handle_command_do_follow(packet, msg);
+#endif
+
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    case MAV_CMD_USER_5:
+        return handle_command_detected_object(packet);
 #endif
     }
 

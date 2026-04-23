@@ -743,7 +743,9 @@ protected:
     // default empty handling of LANDING_TARGET
     virtual void handle_landing_target(const mavlink_landing_target_t &packet, uint32_t timestamp_ms) { }
 
-    void handle_detected_object(const mavlink_message_t &msg);
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    MAV_RESULT handle_command_detected_object(const mavlink_command_int_t &packet);
+#endif
     // vehicle-overridable message send function
     virtual bool try_send_message(enum ap_message id);
     virtual void send_global_position_int();
