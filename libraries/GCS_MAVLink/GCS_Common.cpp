@@ -4342,7 +4342,7 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 }
 #endif
 
-#if AP_OSD_DETECTED_OBJECTS_ENABLED
+#ifdef AP_OSD_DETECTED_OBJECTS_ENABLED
 MAV_RESULT GCS_MAVLINK::handle_command_detected_object(const mavlink_command_int_t &packet)
 {
     AP_OSD *osd = AP::osd();
@@ -5931,7 +5931,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_int_packet(const mavlink_command_int_t &p
         return handle_command_do_follow(packet, msg);
 #endif
 
-#if AP_OSD_DETECTED_OBJECTS_ENABLED
+#ifdef AP_OSD_DETECTED_OBJECTS_ENABLED
     case MAV_CMD_USER_5:
         return handle_command_detected_object(packet);
 #endif
