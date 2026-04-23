@@ -403,6 +403,9 @@ void AP_OSD::osd_thread()
             update_stats();
             update_current_screen();
         }
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+        update_detected_objects();
+#endif
         update_osd();
     }
 }
@@ -641,6 +644,79 @@ bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) con
     // if we got this far everything must be ok
     return true;
 }
+
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+void AP_OSD::set_detected_object(uint16_t tracker_id, uint8_t count,
+                                  float x1, float y1, float x2, float y2,
+                                  uint8_t confidence)
+{
+    const uint32_t now = AP_HAL::millis();
+
+    // try to find existing slot with matching tracker_id
+    for (uint8_t i = 0; i < MAX_DETECTED_OBJECTS; i++) {
+        if (_detected_objects[i].active && _detected_objects[i].tracker_id == tracker_id) {
+            _detected_objects[i].x1 = x1;
+            _detected_objects[i].y1 = y1;
+            _detected_objects[i].x2 = x2;
+            _detected_objects[i].y2 = y2;
+            _detected_objects[i].confidence = confidence;
+            _detected_objects[i].timestamp_ms = now;
+            _detected_objects_count = count;
+            _detected_objects_frame_ms = now;
+            return;
+        }
+    }
+
+    // find empty slot
+    for (uint8_t i = 0; i < MAX_DETECTED_OBJECTS; i++) {
+        if (!_detected_objects[i].active) {
+            _detected_objects[i].x1 = x1;
+            _detected_objects[i].y1 = y1;
+            _detected_objects[i].x2 = x2;
+            _detected_objects[i].y2 = y2;
+            _detected_objects[i].tracker_id = tracker_id;
+            _detected_objects[i].confidence = confidence;
+            _detected_objects[i].timestamp_ms = now;
+            _detected_objects[i].active = true;
+            _detected_objects_count = count;
+            _detected_objects_frame_ms = now;
+            return;
+        }
+    }
+
+    // no empty slot, replace oldest
+    uint32_t oldest = UINT32_MAX;
+    uint8_t oldest_idx = 0;
+    for (uint8_t i = 0; i < MAX_DETECTED_OBJECTS; i++) {
+        if (_detected_objects[i].timestamp_ms < oldest) {
+            oldest = _detected_objects[i].timestamp_ms;
+            oldest_idx = i;
+        }
+    }
+    _detected_objects[oldest_idx].x1 = x1;
+    _detected_objects[oldest_idx].y1 = y1;
+    _detected_objects[oldest_idx].x2 = x2;
+    _detected_objects[oldest_idx].y2 = y2;
+    _detected_objects[oldest_idx].tracker_id = tracker_id;
+    _detected_objects[oldest_idx].confidence = confidence;
+    _detected_objects[oldest_idx].timestamp_ms = now;
+    _detected_objects[oldest_idx].active = true;
+    _detected_objects_count = count;
+    _detected_objects_frame_ms = now;
+}
+
+void AP_OSD::update_detected_objects()
+{
+    const uint32_t now = AP_HAL::millis();
+    const uint32_t timeout_ms = 500;
+
+    for (uint8_t i = 0; i < MAX_DETECTED_OBJECTS; i++) {
+        if (_detected_objects[i].active && (now - _detected_objects[i].timestamp_ms) > timeout_ms) {
+            _detected_objects[i].active = false;
+        }
+    }
+}
+#endif // AP_OSD_DETECTED_OBJECTS_ENABLED
 
 #endif // OSD_ENABLED
 

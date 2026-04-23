@@ -4342,6 +4342,39 @@ void GCS_MAVLINK::handle_osd_param_config(const mavlink_message_t &msg) const
 }
 #endif
 
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+void GCS_MAVLINK::handle_detected_object(const mavlink_message_t &msg)
+{
+    AP_OSD *osd = AP::osd();
+    if (osd == nullptr) {
+        return;
+    }
+
+    struct __attribute__((packed)) {
+        uint8_t target_system;
+        uint8_t target_component;
+        uint16_t tracker_id;
+        uint8_t count;
+        float x1;
+        float y1;
+        float x2;
+        float y2;
+        uint8_t confidence;
+    } payload;
+
+    if (msg.len < sizeof(payload)) {
+        return;
+    }
+
+    const uint8_t *raw = reinterpret_cast<const uint8_t*>(&msg.payload64[0]);
+    memcpy(&payload, raw, sizeof(payload));
+
+    osd->set_detected_object(payload.tracker_id, payload.count,
+                             payload.x1, payload.y1, payload.x2, payload.y2,
+                             payload.confidence);
+}
+#endif
+
 void GCS_MAVLINK::handle_heartbeat(const mavlink_message_t &msg)
 {
     // if the heartbeat is from our GCS then we don't failsafe for
@@ -4625,6 +4658,12 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
     case MAVLINK_MSG_ID_OSD_PARAM_CONFIG:
     case MAVLINK_MSG_ID_OSD_PARAM_SHOW_CONFIG:
         handle_osd_param_config(msg);
+        break;
+#endif
+
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    case 50100:
+        handle_detected_object(msg);
         break;
 #endif
 

@@ -201,6 +201,13 @@ protected:
     static const uint8_t SYM_RADIUS = 0x7A;
     static const uint8_t SYM_FLAP = 0x23;
 
+    static const uint8_t SYM_CORNER_TL = 0x5B;  // '['
+    static const uint8_t SYM_CORNER_TR = 0x5D;  // ']'
+    static const uint8_t SYM_CORNER_BL = 0x5B;  // '['
+    static const uint8_t SYM_CORNER_BR = 0x5D;  // ']'
+    static const uint8_t SYM_LINE_H = 0x2D;     // '-'
+    static const uint8_t SYM_LINE_V = 0x7C;     // '|'
+
     static const uint8_t SYM_SIDEBAR_R_ARROW = 0x09;
     static const uint8_t SYM_SIDEBAR_L_ARROW = 0x0A;
     static const uint8_t SYM_SIDEBAR_A = 0x13;
@@ -322,5 +329,11 @@ protected:
         SYM_HEADING,
         SYM_RADIUS,
         SYM_FLAP,
+        SYM_CORNER_TL,
+        SYM_CORNER_TR,
+        SYM_CORNER_BL,
+        SYM_CORNER_BR,
+        SYM_LINE_H,
+        SYM_LINE_V,
     };
 };

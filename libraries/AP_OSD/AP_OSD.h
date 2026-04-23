@@ -49,7 +49,7 @@ class AP_MSP;
 #define PARAM_INDEX(key, idx, group) (uint32_t(uint32_t(key) << 23 | uint32_t(idx) << 18 | uint32_t(group)))
 #define PARAM_TOKEN_INDEX(token) PARAM_INDEX(AP_Param::get_persistent_key(token.key), token.idx, token.group_element)
 
-#define AP_OSD_NUM_SYMBOLS 107
+#define AP_OSD_NUM_SYMBOLS 113
 #define OSD_MAX_INSTANCES 2
 
 #if AP_OSD_LINK_STATS_EXTENSIONS_ENABLED
@@ -237,6 +237,10 @@ private:
 #endif
     AP_OSD_Setting sidebars{false, 4, 5};
 
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    AP_OSD_Setting detected_objects{false, 0, 0};
+#endif
+
 #if AP_OSD_EXTENDED_LNK_STATS
     // Extended link stats data panels
     AP_OSD_Setting rc_tx_power{false, 25, 12};
@@ -347,6 +351,10 @@ private:
     void draw_rc_snr(uint8_t x, uint8_t y);
     void draw_rc_active_antenna(uint8_t x, uint8_t y);    
     void draw_rc_lq(uint8_t x, uint8_t y);
+#endif
+
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    void draw_detected_objects(uint8_t x, uint8_t y);
 #endif
 
     struct {
@@ -647,6 +655,23 @@ public:
         int16_t max_esc_temp;
     };
 
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    static const uint8_t MAX_DETECTED_OBJECTS = 8;
+
+    struct DetectedObject {
+        float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+        uint16_t tracker_id = 0;
+        uint8_t confidence = 0;
+        uint32_t timestamp_ms = 0;
+        bool active = false;
+    };
+
+    void set_detected_object(uint16_t tracker_id, uint8_t count,
+                             float x1, float y1, float x2, float y2,
+                             uint8_t confidence);
+    void update_detected_objects();
+#endif
+
     void set_nav_info(NavInfo &nav_info);
     const volatile StatsInfo& get_stats_info() const {return _stats;};
     // disable the display
@@ -714,6 +739,12 @@ private:
     bool _disable;
 
     StatsInfo _stats;
+
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    DetectedObject _detected_objects[MAX_DETECTED_OBJECTS];
+    uint8_t _detected_objects_count;
+    uint32_t _detected_objects_frame_ms;
+#endif
 #endif
     AP_OSD_Backend *_backends[OSD_MAX_INSTANCES];
     uint8_t _backend_count;

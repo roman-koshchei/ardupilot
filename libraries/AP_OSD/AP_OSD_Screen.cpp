@@ -1174,6 +1174,24 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     AP_GROUPINFO("ESC_IDX", 10, AP_OSD_Screen, esc_index, 0),
 #endif
 
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    // @Param: DETOBJ_EN
+    // @DisplayName: Detected objects display enable
+    // @Description: Enables display of bounding boxes for objects detected by a companion computer
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: DETOBJ_X
+    // @DisplayName: DETOBJ_X
+    // @Description: Horizontal position on screen (not used, position comes from detection data)
+    // @Range: 0 59
+
+    // @Param: DETOBJ_Y
+    // @DisplayName: DETOBJ_Y
+    // @Description: Vertical position on screen (not used, position comes from detection data)
+    // @Range: 0 21
+    AP_SUBGROUPINFO(detected_objects, "DETOBJ", 11, AP_OSD_Screen, AP_OSD_Setting),
+#endif
+
     AP_GROUPEND
 };
 
@@ -1300,6 +1318,13 @@ uint8_t AP_OSD_AbstractScreen::symbols_lookup_table[AP_OSD_NUM_SYMBOLS];
 #define SYM_HEADING 104
 #define SYM_RADIUS 105
 #define SYM_FLAP 106
+
+#define SYM_CORNER_TL 107
+#define SYM_CORNER_TR 108
+#define SYM_CORNER_BL 109
+#define SYM_CORNER_BR 110
+#define SYM_LINE_H 111
+#define SYM_LINE_V 112
 
 #define SYMBOL(n) AP_OSD_AbstractScreen::symbols_lookup_table[n]
 
@@ -2548,6 +2573,65 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
 }
 #endif
 
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+void AP_OSD_Screen::draw_detected_objects(uint8_t x, uint8_t y)
+{
+    if (osd == nullptr) {
+        return;
+    }
+
+    for (uint8_t i = 0; i < AP_OSD::MAX_DETECTED_OBJECTS; i++) {
+        const AP_OSD::DetectedObject &obj = osd->_detected_objects[i];
+        if (!obj.active) {
+            continue;
+        }
+
+        const uint8_t screen_cols = 30;
+        const uint8_t screen_rows = 16;
+
+        const uint8_t col1 = static_cast<uint8_t>(obj.x1 * (screen_cols - 1));
+        const uint8_t row1 = static_cast<uint8_t>(obj.y1 * (screen_rows - 1));
+        const uint8_t col2 = static_cast<uint8_t>(obj.x2 * (screen_cols - 1));
+        const uint8_t row2 = static_cast<uint8_t>(obj.y2 * (screen_rows - 1));
+
+        if (col1 >= screen_cols || col2 >= screen_cols || row1 >= screen_rows || row2 >= screen_rows) {
+            continue;
+        }
+
+        if (col2 <= col1 || row2 <= row1) {
+            continue;
+        }
+
+        const char tl = SYMBOL(SYM_CORNER_TL);
+        const char tr = SYMBOL(SYM_CORNER_TR);
+        const char bl = SYMBOL(SYM_CORNER_BL);
+        const char br = SYMBOL(SYM_CORNER_BR);
+        const char lh = SYMBOL(SYM_LINE_H);
+        const char lv = SYMBOL(SYM_LINE_V);
+
+        // top edge
+        backend->write(col1, row1, false, "%c", tl);
+        for (uint8_t c = col1 + 1; c < col2; c++) {
+            backend->write(c, row1, false, "%c", lh);
+        }
+        backend->write(col2, row1, false, "%c", tr);
+
+        // side edges
+        for (uint8_t r = row1 + 1; r < row2; r++) {
+            backend->write(col1, r, false, "%c", lv);
+            backend->write(col2, r, false, "%c", lv);
+        }
+
+        // bottom edge
+        backend->write(col1, row2, false, "%c", bl);
+        for (uint8_t c = col1 + 1; c < col2; c++) {
+            backend->write(c, row2, false, "%c", lh);
+        }
+        backend->write(col2, row2, false, "%c", br);
+    }
+}
+#endif
+
 #define DRAW_SETTING(n) if (n.enabled) draw_ ## n(n.xpos, n.ypos)
 
 #if HAL_WITH_OSD_BITMAP || HAL_WITH_MSP_DISPLAYPORT
@@ -2646,6 +2730,10 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(rc_snr);
     DRAW_SETTING(rc_active_antenna);
     DRAW_SETTING(rc_lq);
+#endif
+
+#if AP_OSD_DETECTED_OBJECTS_ENABLED
+    DRAW_SETTING(detected_objects);
 #endif
 }
 #endif
